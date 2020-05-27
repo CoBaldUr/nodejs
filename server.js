@@ -1,76 +1,52 @@
-let express = require('express')
+
 let bonjour = require('bonjour')()
-let app = express()
-var bodyParser = require('body-parser')
+
 let f = require('./functions')
+let io = require('socket.io')(3000)
+
+const users = {}
+const services = {}
 
 
-app.set('view engine', 'ejs')
-
-app.use('/assets', express.static('public'))
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
-bonjour.publish({ name: "Base", type: 'http', port: 8080 })
-
-app.get('/', async (request, response) => {
-
-
-
-    response.render('pages/index', {})
-
-
+bonjour.publish({ name: 'Base', type: 'http', port: 3000 })
+bonjour.find({type: 'http'}, function (service) {
+    console.log("Boot WO log")
+    //console.log('Found an HTTP server:', service)
+    services[service.name]=service
+    //console.log('Found service:', services[service.name])
+    io.sockets.emit('service-connected', services[service.name])
 
 })
 
-app.get('/service', (request, response) => {
-    response.send('Services :')
-    bonjour.destroy()
-})
-app.post('/', (request, response) => {
-    // POST
-    var name = "null"
-    name = request.body.namePeer
-
-
-    // !!!!!!!! Gerer les doublons
-    try{
-    bonjour.publish({ name: name, type: 'http', port: 8080 })
-    }catch (error) {
-        console.log('Error',error)
-    }
+console.log("boot")
 
 
 
-let browser = null
-    browser= f.discovery()
-    browser.start()
-if (browser!=null){
-    ////// !!!!!!!!!!!!!! event au lieu d'attendre
 
-    setTimeout( () =>{
-        //browser.stop()
-        let services = browser.services
-        bonjour.publish({ name: name+"bis", type: 'http', port: 8080 })
-        rendu(response, services)}, 3000);
-}
+io.on('connection', socket => {
+    console.log("log")
+    socket.on('new-user', name => {
+        users[socket.id] = name
+        socket.broadcast.emit('user-connected', name)
+
+        bonjour.publish({ name: name, type: 'http', port: 3000 })
+        console.log("publish", services)
+        socket.emit('servicesMulti-connected', services)
+    })
+
+
+    socket.on('send-chat-message', message => {
+        socket.broadcast.emit('chat-message', { message: message, name: users[socket.id] })
+    })
+
+
+    socket.on('disconnect', () => {
+        socket.broadcast.emit('user-disconnected', users[socket.id])
+        delete users[socket.id]
+    })
 
 
 
 })
 
 
-function rendu(response,services){
-    response.render('pages/connection', {peersArr : services})
-
-
-
-    console.log("test")
-    for (let peer in services){
-        console.log('for :', services[peer].referer.address+":"+services[peer].port+" "+services[peer].name)
-    }
-    console.log("test2")
-
-}
-
-
-app.listen(8080)
