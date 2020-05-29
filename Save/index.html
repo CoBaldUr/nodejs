@@ -56,11 +56,12 @@
         }
     </style>
     <title>Test Node</title>
-    <script defer src="http://localhost:3000/socket.io/socket.io.js"></script>
-    <script defer src="script.js"></script>
+    <script defer src="http://192.168.0.101:3000/socket.io/socket.io.js"></script>
+    <script defer src="../views/client/script.js"></script>
 </head>
 <body>
 <div class="sidenav">
+
     <div id="serviceLocal-container">Locaux</div>
     <div id="serviceDeLocal-container">Non Locaux</div>
 </div>
@@ -68,6 +69,9 @@
 <div class="main">
 
 <div id="message-container"></div>
+    <form id="log-container">
+
+    </form>
 <form id="send-container">
 
 </form>

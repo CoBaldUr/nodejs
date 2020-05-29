@@ -1,5 +1,8 @@
 
-const socket = io('http://192.168.0.101:3000')
+
+
+let ipLocal = document.getElementById('ipLocal').innerText
+const socket = io(ipLocal)
 const messageContainer = document.getElementById('message-container')
 const formContainer = document.getElementById('send-container')
 const serviceLocalContainer = document.getElementById('serviceLocal-container')
@@ -7,10 +10,18 @@ const serviceDeLocalContainer = document.getElementById('serviceDeLocal-containe
 const messageForm = document.getElementById('send-container')
 
 
-const name = prompt('What is your name?')
-appendMessage('You joined')
-appendForm()
-socket.emit('new-user', name)
+
+const logContainer = document.getElementById('log-container')
+
+
+
+
+
+
+appendLog()
+
+
+
 
 socket.on('chat-message', data => {
     appendMessage(`${data.name}: ${data.message}`)
@@ -69,6 +80,43 @@ function appendServicesMulti(services, type) {
 
     }
 
+
+function appendLog() {
+    let name =""
+
+    const inputForm =document.createElement('input')
+    inputForm.setAttribute("type","text")
+    inputForm.setAttribute("id","nameInput")
+    inputForm.setAttribute("value",name)
+
+    logContainer.append(inputForm)
+
+    const buttonForm = document.createElement("BUTTON")
+    buttonForm.setAttribute("type","submit")
+    buttonForm.setAttribute("id","send-button")
+    buttonForm.innerText ="Identifier"
+
+    logContainer.append(buttonForm)
+
+    const nameInput = document.getElementById('nameInput')
+    logContainer.addEventListener('submit', e => {
+        e.preventDefault()
+        name = nameInput.value
+
+        buttonForm.outerHTML=""
+        nameInput.outerHTML=""
+        if (name!="") {
+
+            appendMessage('You joined')
+            appendForm()
+            socket.emit('new-user', name)
+        }
+        else {
+            appendLog()
+        }
+    })
+
+}
 
 
     function appendForm() {

@@ -1,19 +1,20 @@
 
 let bonjour = require('bonjour')()
 
-let f = require('./functions')
+
 let io = require('socket.io')(3000)
 
 const users = {}
 const servicesLocal = {}
 const servicesDeLocal ={}
+let nomServeur="Base"
 
-
-servicesLocal["Base"]=bonjour.publish({ name: 'Base', type: 'http', port: 3000 })
+servicesLocal[nomServeur]=bonjour.publish({ name: nomServeur, type: 'http', port: 3000 })
 bonjour.find({type: 'http'}, function (service) {
     console.log("Boot WO log")
-    //console.log('Found an HTTP server:', service)
+    console.log('Found an HTTP server:', service.referer.address)
     //servicesLocal[service.name]=service
+    if (service.name==nomServeur)servicesLocal[nomServeur].referer=service.referer
     console.log("service name : "+service.name)
     if (servicesLocal[service.name]== undefined){
         console.log("Delocal")
@@ -59,30 +60,52 @@ io.on('connection', socket => {
 
 
     socket.on('disconnect', () => {
-        socket.broadcast.emit('user-disconnected', users[socket.id])
         let name = users[socket.id]
+        if (name != null) {
+
+        socket.broadcast.emit('user-disconnected', name)
+
         delete users[socket.id]
         let service = servicesLocal[name]
-        console.log(name ,service)
-        var stop =service.stop
+        console.log(name, service)
+        var stop = service.stop
         stop()
-        delete  servicesLocal[name]
+        delete servicesLocal[name]
         //socket.broadcast.emit('service-disconnected', users[socket.id])
-
+    }
     })
 
 
 })
+
+
+
+
+
+
 
 ///  test publication du html
 var express = require('express');
 var app = express();
 var path = require("path");
 
-app.use( express.static( __dirname + '/client' ));
-app.get( '/', function( req, res ) {
-        res.sendFile( path.join( __dirname, 'client', 'index.html' ));
-    });
+app.set('view engine', 'ejs')
 
+
+app.use( express.static( __dirname + '/views/client/' ))
+app.get( '/', function( req, res ) {
+    console.log("GET")
+    let ipLocal = servicesLocal[nomServeur].referer.address+":"+servicesLocal[nomServeur].port
+    console.log(ipLocal)
+        //res.sendFile( path.join( __dirname, 'client', 'index.html' ));
+    res.render('client/conv', {ipLocal : ipLocal})
+
+
+});
+
+
+app.get('/views/client/script.js', function(req, res) {
+    res.sendFile(path.join(__dirname + '/views/client/script.js'));
+});
 
 app.listen(8080)
